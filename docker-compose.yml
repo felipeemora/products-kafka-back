@@ -1,0 +1,36 @@
+version: '3.7'
+
+services:
+  shop-exito:
+    container_name: bd-shop-exito
+    image: shop-exito-image:latest
+    ports:
+      - "8080:8080"
+
+  shop-jumbo:
+    container_name: bd-shop-jumbo
+    image: shop-jumbo-image:latest
+    ports:
+      - "8081:8081"
+
+  product-tracker:
+    container_name: bd-product-tracker
+    image: product-tracker-image:latest
+    ports:
+      - "8082:8082"
+    depends_on:
+      - shop-jumbo
+      - shop-exito
+
+  db:
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_DATABASE: 'shop_exito'
+      MYSQL_USER: 'jmora'
+      MYSQL_PASSWORD: '2611'
+      MYSQL_ROOT_PASSWORD: '2611'
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./shop-exito:/var/lib/mysql

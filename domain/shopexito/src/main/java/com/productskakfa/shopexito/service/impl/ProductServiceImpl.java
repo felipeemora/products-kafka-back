@@ -1,12 +1,12 @@
 package com.productskakfa.shopexito.service.impl;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.productskakfa.shopexito.model.Product;
+import com.productskakfa.shopexito.repository.ProductsRepository;
 import com.productskakfa.shopexito.service.ProductService;
 
 import reactor.core.publisher.Flux;
@@ -15,61 +15,48 @@ import reactor.core.publisher.Mono;
 @Service
 public class ProductServiceImpl implements ProductService {
 
-    private static final List<Product> products = new ArrayList<>(List.of(
-        new Product(100,"Azucar","Alimentación",1.10,20),
-        new Product(111,"Pan","Alimentación",1.3,10),
-        new Product(112,"Esponja","Limpieza",2,20),
-        new Product(113,"Sofá","Hogar",80,4),
-        new Product(114,"Jarrón","Hogar",40,10),
-        new Product(115,"Arina","Alimentación",3,30),
-        new Product(116,"Fregona","Limpieza",3.40,6),
-        new Product(117,"Cubo","Limpieza",2.5,12))
-    );
+    @Autowired
+    ProductsRepository productsRepository;
 
     @Override
     public Flux<Product> getAll() {
-        return Flux.fromIterable(products)
+        return productsRepository.findAll()
             .delayElements(Duration.ofMillis(500));
     }
 
     @Override
     public Flux<Product> getByCategory(String category) {
-        return getAll()
+        return productsRepository
+            .findByCategory(category)
             .filter(p -> p.getCategory().equals(category));
     }
 
     @Override
     public Mono<Product> getByCode(int code) {
-        return getAll()
-            .filter(p -> p.getCode() == code)
-            .next();
+        return productsRepository.findById(code);
     }
 
     @Override
     public Mono<Void> create(Product product) {
        return getByCode(product.getCode())
-        .switchIfEmpty(Mono.just(product).map(p -> {
-            products.add(product);
-            return product;
-        }))
+        .switchIfEmpty(Mono.just(product).flatMap(p -> productsRepository.save(p)))
         .then();
     }
 
     @Override
     public Mono<Product> delete(int code) {
         return getByCode(code)
-            .map(p -> {
-                products.removeIf(r-> r.getCode() == code);
-                return p;
-            });
+            .flatMap(p -> productsRepository.deleteById(code)
+                .then(Mono.just(p)
+            ));
     }
 
     @Override
     public Mono<Product> update(int code, double price) {
         return getByCode(code)
-            .map(p -> {
+            .flatMap(p -> {
                 p.setPrice(price);
-                return p;
+                return productsRepository.save(p);
             });
     }
 

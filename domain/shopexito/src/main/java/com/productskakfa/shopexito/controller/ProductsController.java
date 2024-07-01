@@ -43,6 +43,7 @@ public class ProductsController {
 
     @PostMapping("create")
     public ResponseEntity<Mono<Void>> create(@RequestBody Product product) {
+        product.setNew(true);
         return new ResponseEntity<>(productService.create(product), HttpStatus.OK);
     }
     
